@@ -1,0 +1,6 @@
+#!/bin/bash
+#!/bin/bash
+echo '#!/bin/bash' > /usr/local/bin/audit-read-secret
+echo 'cat /var/www/html/secret_config.php' >> /usr/local/bin/audit-read-secret
+chmod +x /usr/local/bin/audit-read-secret
+echo "$1 ALL=(ALL) NOPASSWD: /usr/local/bin/audit-read-secret" > /etc/sudoers.d/audit
