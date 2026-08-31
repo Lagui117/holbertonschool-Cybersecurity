@@ -1,2 +1,2 @@
 #!/bin/bash
-ss -t4ln | awk '{print $4}' | awk -F: '{print $2}' | sort -n
+ss -lnt4 | awk '{print $4}' | awk -F: '{print $2}' | sort -n
