@@ -19,6 +19,18 @@ if [ ${#FILES_TO_WATCH[@]} -eq 0 ]; then
     exit 1
 fi
 
-echo "Configuration loaded successfully"
-echo "Monitoring ${#SERVICES[@]} services: ${SERVICES[*]}"
-echo "Watching ${#FILES_TO_WATCH[@]} files: ${FILES_TO_WATCH[*]}"
+check_services() {
+    for svc in "${SERVICES[@]}"; do
+        if pgrep -f "$svc" > /dev/null 2>&1; then
+            echo "OK: $svc is running"
+        else
+            if eval "$svc" > /dev/null 2>&1; then
+                echo "FIXED: Restarted $svc"
+            else
+                echo "ERROR: Failed to restart $svc"
+            fi
+        fi
+    done
+}
+
+check_services
