@@ -2,6 +2,18 @@
 
 CONFIG_FILE="./sentinel.conf"
 
+LOG_FILE="/var/log/sentinel.log"
+
+log() {
+    local component="$1"
+    local target="$2"
+    local status="$3"
+    local details="$4"
+    local timestamp=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+    printf '{"timestamp":"%s","component":"%s","target":"%s","status":"%s","details":"%s"}\n' \
+        "$timestamp" "$component" "$target" "$status" "$details" >> "$LOG_FILE"
+}
+
 if [ ! -f "$CONFIG_FILE" ]; then
     echo "Error: Configuration file not found: $CONFIG_FILE"
     exit 1
@@ -22,12 +34,12 @@ fi
 check_services() {
     for svc in "${SERVICES[@]}"; do
         if pgrep -f "$svc" > /dev/null 2>&1; then
-            echo "OK: $svc is running"
+            log "SERVICE" "$svc" "OK" "$svc is running"
         else
             if eval "$svc" > /dev/null 2>&1; then
-                echo "FIXED: Restarted $svc"
+                log "SERVICE" "$svc" "FIXED" "Restarted service"
             else
-                echo "ERROR: Failed to restart $svc"
+                log "SERVICE" "$svc" "ERROR" "Failed to restart service"
             fi
         fi
     done
@@ -39,7 +51,7 @@ check_integrity() {
         local golden="/var/backups/sentinel/${base}.gold"
 
         if [ ! -f "$golden" ]; then
-            echo "ERROR: Golden copy not found for $file"
+            log "INTEGRITY" "$file" "ERROR" "Golden copy not found"
             continue
         fi
 
@@ -47,10 +59,10 @@ check_integrity() {
         local hash_golden=$(md5sum "$golden" | awk '{print $1}')
 
         if [ "$hash_current" = "$hash_golden" ]; then
-            echo "OK: $file integrity verified"
+            log "INTEGRITY" "$file" "OK" "$file integrity verified"
         else
             cp "$golden" "$file"
-            echo "FIXED: Restored $file"
+            log "INTEGRITY" "$file" "FIXED" "Restored $file"
         fi
     done
 }
@@ -70,7 +82,7 @@ check_ports() {
 
         if [ "$allowed" = false ]; then
             fuser -k "${port}/tcp" > /dev/null 2>&1
-            echo "ALERT: Killed rogue process on port $port"
+            log "PORT" "$port" "ALERT" "Killed rogue process on port $port"
         fi
     done
 }
